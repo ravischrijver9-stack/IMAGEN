@@ -1,4 +1,3 @@
-<!DOCTYPE html>
 <html lang="nl">
 <head>
   <meta charset="UTF-8">
@@ -12,19 +11,19 @@
 </head>
 <body>
   <h2>🖼️ Genereer een afbeelding</h2>
-  <input type="text" id="prompt" placeholder="Bijv. futuristische stad bij zonsondergang" />
+  <input type="text" id="prompt" placeholder="Bijv. een scouting teken met daaronder de naam Doemaarzat" />
   <select id="style">
     <option value="">Stijl (optioneel)</option>
-    <option value="ghibli">Ghibli</option>
     <option value="realistisch">Realistisch</option>
+    <option value="ghibli">Ghibli</option>
     <option value="pixelart">Pixelart</option>
     <option value="magisch">Magisch</option>
   </select>
   <select id="ratio">
     <option value="">Ratio (optioneel)</option>
-    <option value="square">1:1 vierkant</option>
-    <option value="portrait">3:4 portret</option>
-    <option value="landscape">4:3 landschap</option>
+    <option value="vierkant">Vierkant (1024x1024)</option>
+    <option value="landschap">Landschap (1792x1024)</option>
+    <option value="portret">Portret (1024x1792)</option>
   </select>
   <button onclick="generateImage()">Genereer</button>
 
@@ -33,35 +32,45 @@
 
   <script>
     async function generateImage() {
-      const prompt = document.getElementById("prompt").value;
+      const promptInput = document.getElementById("prompt").value;
       const style = document.getElementById("style").value;
       const ratio = document.getElementById("ratio").value;
       const status = document.getElementById("status");
       const result = document.getElementById("result");
 
+      // Bouw volledige prompt
+      let fullPrompt = promptInput;
+      if (style) fullPrompt += ` in ${style} stijl`;
+      if (ratio) fullPrompt += ` met ${ratio} verhouding`;
+
+      // Bepaal afbeeldingsgrootte
+      let size = "1024x1024";
+      if (ratio === "landschap") size = "1792x1024";
+      if (ratio === "portret") size = "1024x1792";
+
       status.textContent = "🧠 Bezig met genereren...";
       result.src = "";
 
       try {
-        const response = await fetch("https://api.kie.ai/v1/image", {
+        const response = await fetch("https://api.openai.com/v1/images/generations", {
           method: "POST",
           headers: {
-            "Authorization": "Bearer 5ee3a1a682907748d8b2d380846350fd",
+            "Authorization": "Bearer sk-proj-5ee3a1a682907748d8b2d380846350fd",
             "Content-Type": "application/json"
           },
           body: JSON.stringify({
-            prompt: prompt,
-            style: style,
-            ratio: ratio,
-            model: "gpt-image-1"
+            model: "dall-e-3",
+            prompt: fullPrompt,
+            n: 1,
+            size: size
           })
         });
 
         const data = await response.json();
-        result.src = data.image_url;
+        result.src = data.data[0].url;
         status.textContent = "✅ Afbeelding klaar!";
       } catch (error) {
-        status.textContent = "❌ Fout bij genereren. Controleer je API-key of endpoint.";
+        status.textContent = "❌ Fout bij genereren. Controleer je API-key of prompt.";
         console.error(error);
       }
     }
